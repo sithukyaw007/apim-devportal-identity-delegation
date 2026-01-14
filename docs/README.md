@@ -52,14 +52,31 @@ This directory contains comprehensive technical documentation for the APIM Ident
 
 ---
 
+### 🔐 [Certificate-Based Authentication and mTLS](./CERTIFICATE_MTLS_AUTHENTICATION.md)
+**Enterprise Integration** - Comprehensive guide for machine-to-machine authentication:
+- Certificate-based authentication options
+- Mutual TLS (mTLS) implementation
+- Integration with offsite remote systems
+- APIM policies for certificate validation
+- Application Gateway + APIM architecture
+- Hybrid authentication (OAuth + Certificates)
+- Certificate lifecycle management
+- Best practices and security hardening
+- Monitoring and troubleshooting
+
+**Audience**: Enterprise architects, security engineers, integration developers, and teams implementing B2B/M2M scenarios
+
+---
+
 ## Documentation Structure
 
 ```
 docs/
-├── README.md                          # This file
-├── TECHNICAL_SOLUTIONS.md             # Complete technical documentation
-├── ARCHITECTURE_OVERVIEW.md           # High-level architecture guide
-└── QUICK_START.md                     # Getting started guide
+├── README.md                              # This file
+├── TECHNICAL_SOLUTIONS.md                 # Complete technical documentation
+├── ARCHITECTURE_OVERVIEW.md               # High-level architecture guide
+├── QUICK_START.md                         # Getting started guide
+└── CERTIFICATE_MTLS_AUTHENTICATION.md     # Certificate & mTLS integration guide
 ```
 
 ## How to Use This Documentation
@@ -91,6 +108,9 @@ docs/
 - HMAC signature verification → [Technical Solutions](./TECHNICAL_SOLUTIONS.md#delegation-request-verification)
 - Managed Identity → [Technical Solutions](./TECHNICAL_SOLUTIONS.md#3-managed-identity)
 - Security layers → [Architecture Overview](./ARCHITECTURE_OVERVIEW.md#security-layers)
+- Certificate-based authentication → [Certificate & mTLS Guide](./CERTIFICATE_MTLS_AUTHENTICATION.md#certificate-based-authentication)
+- Mutual TLS (mTLS) → [Certificate & mTLS Guide](./CERTIFICATE_MTLS_AUTHENTICATION.md#mutual-tls-mtls)
+- Hybrid authentication → [Certificate & mTLS Guide](./CERTIFICATE_MTLS_AUTHENTICATION.md#approach-1-hybrid-authentication-recommended)
 
 ### Infrastructure
 - Bicep modules → [Technical Solutions](./TECHNICAL_SOLUTIONS.md#infrastructure-architecture)
