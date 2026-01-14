@@ -13,12 +13,22 @@ param publisherEmail string
 param identityWebAppUrl string
 param delegationKey string
 
+@description('APIM SKU name: Developer or Premium')
+param skuName string = 'Developer'
+
+@description('APIM SKU capacity (>=1)')
+param skuCapacity int = 1
+
+@description('Availability zones for zone redundancy (Premium only); empty for LRS')
+param zones array = []
+
 resource apiManagementInstance 'Microsoft.ApiManagement/service@2022-08-01' = {
   name: name
   location: location
+  zones: if (!empty(zones)) zones
   sku:{
-    capacity: 1
-    name: 'Developer'
+    capacity: skuCapacity
+    name: skuName
   }
   properties:{
     virtualNetworkType: 'None'

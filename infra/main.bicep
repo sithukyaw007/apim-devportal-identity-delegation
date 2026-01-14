@@ -23,6 +23,15 @@ param auth0ClientSecret string = ''
 param auth0ClientId string = ''
 param auth0Domain string
 
+@description('APIM SKU name: Developer (dev/test) or Premium (prod)')
+param apimSkuName string = 'Developer'
+
+@description('APIM SKU capacity (1 for Developer; >=1 for Premium)')
+param apimSkuCapacity int = 1
+
+@description('APIM availability zones for zone redundancy (e.g., ["1","2","3"] for Premium ZRS). Empty for LRS.')
+param apimZones array = []
+
 // param apprSpOID string // App registration "apim-sample-zzuo"'s service principal object id
 param acrPullRoleId string = '7f951dda-4ed3-4680-a7ca-43fe172d538d' // AcrPull
 param apimContributorRoleId string = 'b24988ac-6180-42a0-ab88-20f7382dd24c' // API Management Service Contributor
@@ -44,6 +53,9 @@ module apim 'modules/apim.bicep' = {
     publisherEmail: publisherEmail
     publisherName: publisherName
     delegationKey: delegationKey
+    skuName: apimSkuName
+    skuCapacity: apimSkuCapacity
+    zones: apimZones
   }
 }
 
