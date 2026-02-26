@@ -37,12 +37,14 @@ az deployment sub create \
                 suffix="${SUFFIX}" \
                 publisherEmail="${PUB_EMAIL}" \
                 publisherName="${PUB_NAME}" \
-                auth0ClientId="${AUTH0_CLIENT_ID}" \
-                auth0Domain="${AUTH0_DOMAIN}" \
-                auth0ClientSecret="${AUTH0_CLIENT_SECRET}" \
+                keycloakClientId="${KEYCLOAK_CLIENT_ID}" \
+                keycloakIssuer="${KEYCLOAK_ISSUER}" \
+                keycloakClientSecret="${KEYCLOAK_CLIENT_SECRET}" \
+                keycloakCallbackUrl="${KEYCLOAK_CALLBACK_URL}" \
                 delegationKey="${DELEGATION_KEY}" \
                 acrName="${ACR_NAME}" \
                 acrRepoName="${ACR_REPO_NAME}" \
-                imageTag="${IMAGE_TAG}"
+                imageTag="${IMAGE_TAG}" \
+                developerPortalUrl="${DEVELOPER_PORTAL_URL}"
 
 echo -e "\n 🎉 Deployment complete\n"

@@ -13,9 +13,9 @@ RUN go mod download
 COPY src/identityApp .
 COPY .env* /auth-proxy/
 
-RUN go build -o out/auth0-go-web-app .
+RUN go build -o out/keycloak-go-web-app .
 
 # Expose port 3000 for our web app binary
 EXPOSE 3000
 
-CMD ["/auth-proxy/out/auth0-go-web-app"]
+CMD ["/auth-proxy/out/keycloak-go-web-app"]
