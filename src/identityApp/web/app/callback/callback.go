@@ -52,18 +52,36 @@ func handleSignUpAndSignIn(ctx *gin.Context, auth *authenticator.Authenticator, 
 		return
 	}
 
+	rawIDToken, _ := token.Extra("id_token").(string)
+
 	session := sessions.Default(ctx)
 	session.Set("access_token", token.AccessToken)
 	session.Set("profile", profile)
+	if rawIDToken != "" {
+		session.Set("id_token", rawIDToken)
+	}
 	fmt.Println("profile: ", profile)
 	if err := session.Save(); err != nil {
 		ctx.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	parts := strings.Split(profile["sub"].(string), "|")
-	uid := parts[1]
-	username := profile["name"].(string)
+	uid := getStringClaim(profile, "sub")
+	if uid == "" {
+		ctx.String(http.StatusInternalServerError, "Missing sub claim in ID token.")
+		return
+	}
+
+	username := getStringClaim(profile, "email")
+	if username == "" {
+		username = getStringClaim(profile, "preferred_username")
+	}
+	if username == "" {
+		username = getStringClaim(profile, "name")
+	}
+	if username == "" {
+		username = uid
+	}
 
 	userExistInApim, err := azureClient.UserExistInApim(uid, accessToken)
 	if userExistInApim == false {
@@ -91,4 +109,17 @@ func handleSignUpAndSignIn(ctx *gin.Context, auth *authenticator.Authenticator, 
 	fmt.Println("developerPortalUrl: ", developerPortalUrl)
 	url := fmt.Sprintf("%ssignin-sso?token=%s&returnUrl=%s", developerPortalUrl, encodedToken, encodedReturnURL)
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+func getStringClaim(profile map[string]interface{}, key string) string {
+	value, ok := profile[key]
+	if !ok || value == nil {
+		return ""
+	}
+	strValue, ok := value.(string)
+	if !ok {
+		return ""
+	}
+
+	return strings.TrimSpace(strValue)
 }

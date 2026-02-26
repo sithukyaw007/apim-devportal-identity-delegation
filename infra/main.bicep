@@ -17,11 +17,13 @@ param delegationKey string = ''
 // @secure()
 // param apprClientSecret string = ''
 @secure()
-param auth0ClientSecret string = ''
+param keycloakClientSecret string = ''
 
 // param azureClientId string
-param auth0ClientId string = ''
-param auth0Domain string
+param keycloakClientId string = ''
+param keycloakIssuer string
+param keycloakCallbackUrl string = 'https://webapp-${suffix}.azurewebsites.net/callback'
+param developerPortalUrl string = 'https://apim-sample-${suffix}.developer.azure-api.net/'
 
 // param apprSpOID string // App registration "apim-sample-zzuo"'s service principal object id
 param acrPullRoleId string = '7f951dda-4ed3-4680-a7ca-43fe172d538d' // AcrPull
@@ -67,14 +69,14 @@ module webappsettings 'modules/webapp-settings.bicep' = {
   name: 'webapp-settings'
   params: {
     webApplication: webapp.outputs.name
-    auth0ClientId: auth0ClientId
-    auth0Domain: auth0Domain
-    auth0CallbackUrl: 'https://webapp-${suffix}.azurewebsites.net/callback'
-    auth0Secret: auth0ClientSecret
+    keycloakClientId: keycloakClientId
+    keycloakIssuer: keycloakIssuer
+    keycloakCallbackUrl: keycloakCallbackUrl
+    keycloakClientSecret: keycloakClientSecret
     delegationKey: delegationKey
     apimName: apim.outputs.name
     rgName: resourceGroup.name
-    developerPortalUrl: 'https://${apim.outputs.name}.developer.azure-api.net/'
+    developerPortalUrl: developerPortalUrl
     apimResourceUri: apim.outputs.id
     // azureClientId: apprClientId
     // azureClientSecret: apprClientSecret

@@ -1,20 +1,20 @@
-# Azure API Management (APIM) Developer portal identity delegation with Auth0
+# Azure API Management (APIM) Developer portal identity delegation with Keycloak
 <p align="center">
   <img src="./src/images/readme.drawio.png">
 </p>
-This project is created as an example for using identity delegation with Auth0 and Azure API Management (APIM) Developer portal.
+This project is created as an example for using identity delegation with Keycloak and Azure API Management (APIM) Developer portal.
 
 ## 📝 Demo
 ### SignUp
-- Click on the `Sign Up` button on the top right corner when you are not an existing user in Auth0.
+- Click on the `Sign Up` button on the top right corner when you are not an existing user in Keycloak.
 - Switch to `Sign Up` and fill in the form and click on the `Sign Up` button.
 ![SignUp1](./src/images/sign-up-1.gif)
 
-- You will be signed up in Auth0 and also in the APIM instance.
+- You will be signed up in Keycloak and also in the APIM instance.
 ![SignUp2](./src/images/sign-up-2.gif)
 
 ### SignIn
-- Click on the `Sign In` button on the top right corner when you are an existing user in Auth0.
+- Click on the `Sign In` button on the top right corner when you are an existing user in Keycloak.
 - An user will be added to the APIM instance if the user is not an existing user in the APIM instance.
 ![SignIn](./src/images/sign-in-1.gif)
 
@@ -36,31 +36,28 @@ Please note that the setup instructions provided in this README are intended for
     git clone https://github.com/zoeyzuo-se/azure-apim-identity-delegation-sample.git
     
 
-### 🔒 Configure Auth0 🔒
-
-![ConfigureAuth0](./src/images/configure-auth0.gif)
+### 🔒 Configure Keycloak 🔒
 
 Detail steps:
-1. Create a new Auth0 account at [Auth0](https://auth0.com/).
-    > If prompted, select `Database` for authentication.
-2. Select Applications in the left menu and click the Create Application button.
-3. Name your new app and select `Regular Web App Applications`.
-4. Click the Create button.
-5. Select the Settings tab.
-6. Add the following URL to the `Allowed Callback URLs` list. Separated by a comma:
+1. Create or use an existing Keycloak realm.
+2. Create a confidential client for this app.
+3. Set `Valid Redirect URIs` to:
     ```
     http://localhost:3000/callback,
     https://\<your-web-app-name\>.azurewebsites.net/callback,
-    https://\<your-apim-name\>.developer.azure-api.net/callback
+    https://\<your-portal-host\>/callback
     ```
-7. Add the following URL to the `Allowed Logout URLs` list:
+4. Set `Valid Post Logout Redirect URIs` to:
     ```
     http://localhost:3000,
-    https://\<your-web-app-name\>.azurewebsites.net
-    https://\<your-apim-name\>.developer.azure-api.net
+    https://\<your-web-app-name\>.azurewebsites.net,
+    https://\<your-portal-host\>/
     ```
-8. Save the changes.
-9. Copy and paste the Domain, Client ID, and Client Secret values into the `.env` file in the root of this project. They should match to the following keys respectively: `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`.
+5. Save the changes.
+6. Copy the Client ID, Client Secret, and issuer URL into the `.env` file. The issuer URL should look like:
+    ```
+    https://<your-keycloak-host>/realms/<your-realm>
+    ```
 
 ### 🌳 Environment Variables 🌳
 To run the environment successfully, rename the `.env.example` file to `.env` and provide the following values:
@@ -75,17 +72,17 @@ Here's a brief description of each environment variable:
 - `ACR_NAME`: The name of your Azure Container Registry (ACR). This should be globally unique.
 - `ACR_REPO_NAME`: The name of your ACR repository.
 - `IMAGE_TAG`: The tag for the Docker image.
-- `AUTH0_CALLBACK_URL`: Your auth0 callback URL either localhost or your webapp | e.g http://localhost:3000/callback
+- `KEYCLOAK_CALLBACK_URL`: Your Keycloak callback URL either localhost or your webapp | e.g http://localhost:3000/callback
 - `APIM_NAME`: The name of your APIM.
 - `APIM_RESOURCE_GROUP`: The name of your resource group.
 - `AZURE_SUBSCRIPTION_ID`: Your Azure subscription ID.
-- `DEVELOPER_PORTAL_URL`: The APIM developer portal URL.
+- `DEVELOPER_PORTAL_URL`: The APIM developer portal URL (self-hosted or hosted).
 
-Additionally, you will need to obtain the following values from Auth0:
+Additionally, you will need to obtain the following values from Keycloak:
 
-- `AUTH0_CLIENT_ID`: Your Auth0 client ID.
-- `AUTH0_DOMAIN`: Your Auth0 domain.
-- `AUTH0_CLIENT_SECRET`: Your Auth0 client secret.
+- `KEYCLOAK_CLIENT_ID`: Your Keycloak client ID.
+- `KEYCLOAK_ISSUER`: Your Keycloak issuer URL.
+- `KEYCLOAK_CLIENT_SECRET`: Your Keycloak client secret.
 
 Make sure to provide the correct values for these variables to ensure proper authentication and authorization within the environment.
 
@@ -114,10 +111,11 @@ Then generate a delegation key and add it to the env variables in base64 format.
 ## 🚀 Usage
 ### 🌐 Publish developer portal on APIM
 Publish your API Management developer portal following the tutorial [here](https://learn.microsoft.com/en-us/azure/api-management/api-management-howto-developer-portal-customize#publish-from-the-azure-portal).
+If you are using the self-hosted portal, publish it separately and set `DEVELOPER_PORTAL_URL` to your portal's base URL (for example, `https://portal.example.com/`).
 ### 🔐 Signup and Login to the developer portal!
-SignUp will create a user in the Auth0 Database and also create a user in the APIM instance.
+SignUp will create a user in Keycloak and also create a user in the APIM instance.
 
-Login will authenticate the user with Auth0 and then delegate the user to the APIM instance.
+Login will authenticate the user with Keycloak and then delegate the user to the APIM instance.
 
 ## 🏃‍♂️ Run the app locally
 - Create an .env file under `src/identityApp` and provide the following values:
@@ -130,16 +128,16 @@ Login will authenticate the user with Auth0 and then delegate the user to the AP
     ACR_NAME=<globally-unique-acr-name>
     ACR_REPO_NAME=<your-acr-repo-name> | e.g identity
     IMAGE_TAG=<your-image-tag> | e.g latest
-    AUTH0_CALLBACK_URL=<your-auth0-callback-url> | e.g http://localhost:3000/callback
+    KEYCLOAK_CALLBACK_URL=<your-keycloak-callback-url> | e.g http://localhost:3000/callback
     APIM_NAME=<your-apim-name>
     APIM_RESOURCE_GROUP=<your-apim-resource-group-name>
     AZURE_SUBSCRIPTION_ID=<your-azure-subscription-id>
     DEVELOPER_PORTAL_URL=<your-developer-portal-url>
-    AUTH0_DOMAIN=<your-auth0-domain>
-    AUTH0_CLIENT_ID=<your-auth0-client-id>
-    AUTH0_CLIENT_SECRET=<your-auth0-client-secret>
+    KEYCLOAK_ISSUER=<your-keycloak-issuer-url>
+    KEYCLOAK_CLIENT_ID=<your-keycloak-client-id>
+    KEYCLOAK_CLIENT_SECRET=<your-keycloak-client-secret>
     ```
-- Once you've set your Auth0 credentials in the `.env` file, run `go mod vendor` to download the Go dependencies.
+- Once you've set your Keycloak credentials in the `.env` file, run `go mod vendor` to download the Go dependencies.
 - Run `go run main.go` to start the app and navigate to [http://localhost:3000/](http://localhost:3000/).
 - If everything is working correctly, you should be able to see the following page:
 ![homepage](./src/images/local-success.png)
