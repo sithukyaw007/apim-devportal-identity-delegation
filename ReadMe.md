@@ -1,22 +1,40 @@
 # Azure API Management (APIM) Developer portal identity delegation with Keycloak
 <p align="center">
-  <img src="./src/images/readme.drawio.png">
+  <img src="./src/images/readme.drawio.keycloak.png">
 </p>
 This project is created as an example for using identity delegation with Keycloak and Azure API Management (APIM) Developer portal.
+
+## 🧭 Solution architecture
+
+```mermaid
+flowchart LR
+    User((User)) --> Portal["APIM Developer Portal<br/>(hosted or self-hosted)"]
+    Portal -->|"Delegation request<br/>operation, returnUrl, salt, sig"| App["Identity App<br/>Go and Gin"]
+    App -->|"OIDC auth code flow"| Keycloak["Keycloak<br/>OIDC Provider"]
+    Keycloak -->|"Federation (optional)"| Entra["Microsoft Entra ID<br/>members and guests"]
+    App -->|"Azure ARM REST<br/>create or find user + shared token"| APIM["Azure API Management"]
+    App -->|"signin-sso?token=..."| Portal
+    App -->|"DefaultAzureCredential"| AzureCLI["Azure CLI or Managed Identity"]
+```
+
+System integration points:
+- APIM developer portal delegates sign-in to the app via `GET /delegation` with HMAC signature.
+- The app validates the signature using `DELEGATION_KEY` and initiates OIDC with Keycloak.
+- Keycloak can federate to Microsoft Entra ID for member/guest users.
+- The app uses Azure ARM APIs to create or fetch APIM users and request a shared access token.
+- The app redirects back to the portal `signin-sso` endpoint with the shared access token.
+- Azure auth uses `DefaultAzureCredential` (Azure CLI locally, Managed Identity in App Service).
 
 ## 📝 Demo
 ### SignUp
 - Click on the `Sign Up` button on the top right corner when you are not an existing user in Keycloak.
 - Switch to `Sign Up` and fill in the form and click on the `Sign Up` button.
-![SignUp1](./src/images/sign-up-1.gif)
 
 - You will be signed up in Keycloak and also in the APIM instance.
-![SignUp2](./src/images/sign-up-2.gif)
 
 ### SignIn
 - Click on the `Sign In` button on the top right corner when you are an existing user in Keycloak.
 - An user will be added to the APIM instance if the user is not an existing user in the APIM instance.
-![SignIn](./src/images/sign-in-1.gif)
 
 ## Disclaimer
 
@@ -29,12 +47,6 @@ Please note that the setup instructions provided in this README are intended for
 - [Bicep VSCode extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-bicep)
 
 ## 💻 Setup instructions
-
-
-### 🧩 Clone the repo 🧩
-    
-    git clone https://github.com/zoeyzuo-se/azure-apim-identity-delegation-sample.git
-    
 
 ### 🔒 Configure Keycloak 🔒
 
@@ -58,6 +70,32 @@ Detail steps:
     ```
     https://<your-keycloak-host>/realms/<your-realm>
     ```
+
+### 🔑 Keycloak + Microsoft Entra ID federation (checklist)
+Use this when you want Entra member/guest users to sign in through Keycloak.
+
+Keycloak (realm):
+1. Open Identity Providers and add a new provider: `OpenID Connect v1.0`.
+2. Set the `Alias` to something like `entra`.
+3. Choose the Issuer based on your Entra setup:
+    - Single-tenant: `https://login.microsoftonline.com/<tenant-id>/v2.0`
+    - Multi-tenant: `https://login.microsoftonline.com/organizations/v2.0`
+4. Set `Client ID` and `Client Secret` using the Entra app registration below.
+5. Set `Default Scopes` to `openid profile email`.
+6. Optional: enable `Sync Mode` to `FORCE` so profile changes are updated.
+7. Save and note the `Redirect URI` that Keycloak shows for this IdP.
+
+Microsoft Entra (app registration):
+1. Create an app registration matching your tenant choice above (single-tenant or multi-tenant).
+2. Add the Keycloak IdP redirect URI from the step above.
+3. Create a client secret and copy it to Keycloak.
+4. Add optional claims in the ID token: `email`, `preferred_username`, and `name`.
+5. If you need guest users, enable external collaboration in Entra and assign access to the app.
+6. If you need both members and guests from multiple tenants, keep the app multi-tenant and review cross-tenant access settings.
+
+Validation:
+1. In Keycloak, test the IdP login and confirm the user profile includes `sub` and `email`.
+2. Try logging into the APIM developer portal and confirm the user is created in APIM.
 
 ### 🌳 Environment Variables 🌳
 To run the environment successfully, rename the `.env.example` file to `.env` and provide the following values:
@@ -139,8 +177,7 @@ Login will authenticate the user with Keycloak and then delegate the user to the
     ```
 - Once you've set your Keycloak credentials in the `.env` file, run `go mod vendor` to download the Go dependencies.
 - Run `go run main.go` to start the app and navigate to [http://localhost:3000/](http://localhost:3000/).
-- If everything is working correctly, you should be able to see the following page:
-![homepage](./src/images/local-success.png)
+- If everything is working correctly, you should be able to see the successful login page.
 
 ## 📝 Notes
 ### AzureDefaultCredentials
@@ -181,9 +218,46 @@ In the deployed web app we are using the ManagedIdentityCredential.
 ### 🐛 Debug tips
 If you are seeing unexpected errors, please go to Azure web app service and enable `Application logging` in the `App Service Log` page under `Monitor` and using [golang print statements](https://pkg.go.dev/fmt#Println). You should be able to see the logs in the Log Stream.
 
+#### Local debugging guide (commands)
+Run these from the repo root unless noted.
+
+1. Log in to Azure (so `DefaultAzureCredential` can use Azure CLI):
+    ```bash
+    az login
+    az account set --subscription <your-subscription-id>
+    ```
+2. Create and fill the local env file:
+    ```bash
+    cp .env.sample .env
+    ```
+3. Start the app locally:
+    ```bash
+    cd src/identityApp
+    go mod vendor
+    go run main.go
+    ```
+4. Basic sanity checks:
+    ```bash
+    curl -i http://localhost:3000/
+    ```
+5. If Keycloak redirects fail, verify the issuer metadata is reachable:
+    ```bash
+    curl -sS ${KEYCLOAK_ISSUER}/.well-known/openid-configuration | head -n 5
+    ```
+6. Tail the app logs (same terminal where you ran `go run`), then try a login from the portal.
+
 Common issues:
 - 403 Forbidden: Make sure the web app has `Contributor` role access to the APIM instance.
 - 500 Internal Server Error: make sure the web app is up and running. You can check the logs in the Log Stream.
+
+### 🧭 Keycloak federation troubleshooting
+If Entra sign-in fails or returns incomplete claims, check the following:
+
+- Missing `email` or `preferred_username`: add the optional claims in Entra and confirm Keycloak scopes include `email`.
+- "invalid_redirect_uri": ensure the redirect URI in Entra matches the Keycloak IdP redirect URI exactly.
+- "invalid_client" or "unauthorized_client": verify client ID/secret in Keycloak and app registration settings in Entra.
+- Guest users not allowed: enable external collaboration in Entra and confirm the guest user has access to the app.
+- Stale profile data: set Keycloak IdP `Sync Mode` to `FORCE` and retry login.
 
 ## 🚩 Contact
 If you have any questions, please feel free to reach out to me at zoeyzuouk@gmail.com or create an issue in this repo.
